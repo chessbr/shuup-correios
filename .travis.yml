@@ -1,0 +1,11 @@
+language: python
+python:
+  - "2.7"
+  - "3.4"
+  - "3.5"
+install:
+# install shoop's master HEAD - v4.0 compatible
+  - pip install -e git+https://github.com/shoopio/shoop.git#egg=shoop[everything]
+  - pip install -e .
+script:
+  - py.test -vvv shoop_correios_tests

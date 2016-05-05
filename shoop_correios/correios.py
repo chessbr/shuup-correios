@@ -103,21 +103,21 @@ class CorreiosWS(object):
             """
             result = cls()
 
-            result.codigo = servico.Codigo.get_text() if servico.Codigo else ''
-            result.valor = _convert_currency_to_decimal(servico.Valor.get_text()) if servico.Valor else Decimal()
-            result.prazo_entrega = _convert_to_int(servico.PrazoEntrega.get_text()) if servico.PrazoEntrega else 0
+            result.codigo = servico.codigo.get_text() if servico.codigo else ''
+            result.valor = _convert_currency_to_decimal(servico.valor.get_text()) if servico.valor else Decimal()
+            result.prazo_entrega = _convert_to_int(servico.prazoentrega.get_text()) if servico.prazoentrega else 0
 
-            result.valor_mao_propria = _convert_currency_to_decimal(servico.ValorMaoPropria.get_text()) if servico.ValorMaoPropria else Decimal()
-            result.valor_aviso_recebimento = _convert_currency_to_decimal(servico.ValorAvisoRecebimento.get_text()) if servico.ValorAvisoRecebimento else Decimal()
-            result.valor_declarado = _convert_currency_to_decimal(servico.ValorDeclarado.get_text()) if servico.ValorDeclarado else Decimal()
-            result.entrega_domiciliar = _convert_to_bool(servico.EntregaDomiciliar.get_text()) if servico.EntregaDomiciliar else False
-            result.entrega_sabado = _convert_to_bool(servico.EntregaSabado.get_text()) if servico.EntregaSabado else False
+            result.valor_mao_propria = _convert_currency_to_decimal(servico.valormaopropria.get_text()) if servico.valormaopropria else Decimal()
+            result.valor_aviso_recebimento = _convert_currency_to_decimal(servico.valoravisorecebimento.get_text()) if servico.valoravisorecebimento else Decimal()
+            result.valor_declarado = _convert_currency_to_decimal(servico.valordeclarado.get_text()) if servico.valordeclarado else Decimal()
+            result.entrega_domiciliar = _convert_to_bool(servico.entregadomiciliar.get_text()) if servico.entregadomiciliar else False
+            result.entrega_sabado = _convert_to_bool(servico.entregasabado.get_text()) if servico.entregasabado else False
 
-            result.erro = _convert_to_int(servico.Erro.get_text()) if servico.Erro else 0
-            result.msg_erro = servico.MsgErro.get_text() if servico.MsgErro else ''
+            result.erro = _convert_to_int(servico.erro.get_text()) if servico.erro else 0
+            result.msg_erro = servico.msgerro.get_text() if servico.msgerro else ''
 
-            result.valor_sem_adicionais = _convert_currency_to_decimal(servico.ValorSemAdicionais.get_text()) if servico.ValorSemAdicionais else Decimal()
-            result.obs_fim = servico.obsFim.get_text() if servico.obsFim else ''
+            result.valor_sem_adicionais = _convert_currency_to_decimal(servico.valorsemadicionais.get_text()) if servico.valorsemadicionais else Decimal()
+            result.obs_fim = servico.obsfim.get_text() if servico.obsfim else ''
             return result
 
     @classmethod
@@ -189,13 +189,13 @@ class CorreiosWS(object):
 
             if response.status_code == 200:
                 # deixa a coisa mais 'fácil' para se obter os valores
-                bs = BeautifulSoup(response.text, "xml")
+                bs = BeautifulSoup(response.text)
 
                 if bs.Servicos:
                     # obtém o primeiro serviço - só requisitamos um mesmo...
-                    servico = bs.Servicos.find_all('cServico')[0]
+                    servico = bs.servicos.find_all('cservico')[0]
                 else:
-                    servico = bs.cServico
+                    servico = bs.cservico
 
                 return CorreiosWS.CorreiosWSServiceResult.from_service_element(servico)
 
@@ -223,16 +223,16 @@ def _convert_currency_to_decimal(currency):
     O valor deve ser uma string e o valor deve possuir o separador
     de decimais com virgula, ex: 5.123,49
     """
-    if isinstance(currency, str):
-        try:
-            return Decimal(currency.replace('.', '').replace(',', '.') or 0.0)
-        except:
-            pass
-
-    return Decimal()
+    try:
+        return Decimal(currency.replace('.', '').replace(',', '.') or 0.0)
+    except:
+        return Decimal()
 
 def _convert_to_bool(value):
     """ Converte valores `S` e `N` para True e False, respectivamente """
-    if value and isinstance(value, str) and value.upper() == 'S':
-        return True
+    try:
+        if value and value.upper() == 'S':
+            return True
+    except:
+        pass
     return False

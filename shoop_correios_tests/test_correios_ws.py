@@ -18,7 +18,6 @@ from shoop_correios.correios import _convert_to_int, \
 from shoop_correios.packing.correios import CorreiosPackage
 
 
-@pytest.mark.skipif(raises=CorreiosWSServerTimeoutException)
 def test_convert_service_element():
     CODIGO = '1234'
     VALOR = '432,56'
@@ -34,20 +33,20 @@ def test_convert_service_element():
     OBSFIM = 'fim'
 
     xml_text = """
-    <cServico>
-        <Codigo>{0}</Codigo>
-        <Valor>{1}</Valor>
-        <PrazoEntrega>{2}</PrazoEntrega>
-        <ValorMaoPropria>{3}</ValorMaoPropria>
-        <ValorAvisoRecebimento>{4}</ValorAvisoRecebimento>
-        <ValorDeclarado>{5}</ValorDeclarado>
-        <EntregaDomiciliar>{6}</EntregaDomiciliar>
-        <EntregaSabado>{7}</EntregaSabado>
-        <Erro>{8}</Erro>
-        <MsgErro>{9}</MsgErro>
-        <ValorSemAdicionais>{10}</ValorSemAdicionais>
-        <obsFim>{11}</obsFim>
-    </cServico>
+    <cservico>
+        <codigo>{0}</codigo>
+        <valor>{1}</valor>
+        <prazoentrega>{2}</prazoentrega>
+        <valormaopropria>{3}</valormaopropria>
+        <valoravisorecebimento>{4}</valoravisorecebimento>
+        <valordeclarado>{5}</valordeclarado>
+        <entregadomiciliar>{6}</entregadomiciliar>
+        <entregasabado>{7}</entregasabado>
+        <erro>{8}</erro>
+        <msgerro>{9}</msgerro>
+        <valorsemadicionais>{10}</valorsemadicionais>
+        <obsfim>{11}</obsfim>
+    </cservico>
     """.format(CODIGO,
                VALOR,
                PRAZO_ENTREGA,
@@ -61,25 +60,29 @@ def test_convert_service_element():
                VALORSEMADICIONAIS,
                OBSFIM)
 
-    bs = BeautifulSoup(xml_text, "xml")
-    result = CorreiosWS.CorreiosWSServiceResult.from_service_element(bs.cServico)
+    bs = BeautifulSoup(xml_text)
 
-    repr(result)
-    assert result.codigo == CODIGO
-    assert result.valor == _convert_currency_to_decimal(VALOR)
-    assert result.prazo_entrega == _convert_to_int(PRAZO_ENTREGA)
-    assert result.valor_mao_propria == _convert_currency_to_decimal(VALORMAOPROPRIA)
-    assert result.valor_aviso_recebimento == _convert_currency_to_decimal(VALORAVISORECEBIMENTO)
-    assert result.valor_declarado == _convert_currency_to_decimal(VALORDECLARADO)
-    assert result.entrega_domiciliar == _convert_to_bool(ENTREGADOMICILIAR)
-    assert result.entrega_sabado == _convert_to_bool(ENTREGASABADO)
-    assert result.erro == _convert_to_int(ERRO)
-    assert result.msg_erro == MSGERRO
-    assert result.valor_sem_adicionais == _convert_currency_to_decimal(VALORSEMADICIONAIS)
-    assert result.obs_fim == OBSFIM
+    try:
+        result = CorreiosWS.CorreiosWSServiceResult.from_service_element(bs.cservico)
+
+        repr(result)
+        assert result.codigo == CODIGO
+        assert result.valor == _convert_currency_to_decimal(VALOR)
+        assert result.prazo_entrega == _convert_to_int(PRAZO_ENTREGA)
+        assert result.valor_mao_propria == _convert_currency_to_decimal(VALORMAOPROPRIA)
+        assert result.valor_aviso_recebimento == _convert_currency_to_decimal(VALORAVISORECEBIMENTO)
+        assert result.valor_declarado == _convert_currency_to_decimal(VALORDECLARADO)
+        assert result.entrega_domiciliar == _convert_to_bool(ENTREGADOMICILIAR)
+        assert result.entrega_sabado == _convert_to_bool(ENTREGASABADO)
+        assert result.erro == _convert_to_int(ERRO)
+        assert result.msg_erro == MSGERRO
+        assert result.valor_sem_adicionais == _convert_currency_to_decimal(VALORSEMADICIONAIS)
+        assert result.obs_fim == OBSFIM
+
+    except CorreiosWSServerTimeoutException as e:
+        pytest.skip(str(e))
 
 
-@pytest.mark.skipif(raises=CorreiosWSServerTimeoutException)
 def test_get_preco_prazo():
     CEP_ORIGEM = '89070400'
     CEP_DESTINO = '89070210'
@@ -93,43 +96,49 @@ def test_get_preco_prazo():
     COD_EMPRESA = ''
     SENHA = ''
 
-    result = CorreiosWS.get_preco_prazo(CEP_DESTINO,
-                                        CEP_ORIGEM,
-                                        CorreiosServico.PAC,
-                                        PACKAGE,
-                                        COD_EMPRESA,
-                                        SENHA,
-                                        False,
-                                        0.0,
-                                        False)
+    try:
+        result = CorreiosWS.get_preco_prazo(CEP_DESTINO,
+                                            CEP_ORIGEM,
+                                            CorreiosServico.PAC,
+                                            PACKAGE,
+                                            COD_EMPRESA,
+                                            SENHA,
+                                            False,
+                                            0.0,
+                                            False)
 
-    assert not result is None
-    assert result.codigo == CorreiosServico.PAC
-    assert result.erro == 0
-    assert result.msg_erro == ''
-    assert result.valor > Decimal(0.0)
+        assert not result is None
+        assert result.codigo == CorreiosServico.PAC
+        assert result.erro == 0
+        assert result.msg_erro == ''
+        assert result.valor > Decimal(0.0)
 
 
-    # ERRORS
-    result = CorreiosWS.get_preco_prazo(CEP_DESTINO,
-                                        CEP_ORIGEM,
-                                        'naoexiste',
-                                        PACKAGE,
-                                        COD_EMPRESA,
-                                        SENHA,
-                                        False,
-                                        0.0,
-                                        False)
+        # ERRORS
+        result = CorreiosWS.get_preco_prazo(CEP_DESTINO,
+                                            CEP_ORIGEM,
+                                            'naoexiste',
+                                            PACKAGE,
+                                            COD_EMPRESA,
+                                            SENHA,
+                                            False,
+                                            0.0,
+                                            False)
 
-    assert not result is None
-    assert result.erro != 0
-    assert result.msg_erro != ''
-    assert result.valor == Decimal(0.0)
+        assert not result is None
+        assert result.erro != 0
+        assert result.msg_erro != ''
+        assert result.valor == Decimal(0.0)
 
-@pytest.mark.skipif(raises=CorreiosWSServerTimeoutException)
+    except CorreiosWSServerTimeoutException as e:
+        pytest.skip(str(e))
+
 def test_raise_correios_ws_exc():
-    with pytest.raises(CorreiosWSServerTimeoutException):
-        raise CorreiosWSServerErrorException(500, 'a terrible error occured!')
+    try:
+        with pytest.raises(CorreiosWSServerErrorException):
+            raise CorreiosWSServerErrorException(500, 'a terrible error occured!')
+    except CorreiosWSServerTimeoutException as e:
+        pytest.skip(str(e))
 
 def test_convert_to_int():
     assert _convert_to_int(None) == 0

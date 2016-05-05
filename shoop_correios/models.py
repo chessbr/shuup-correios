@@ -24,13 +24,21 @@ from decimal import Decimal
 import logging
 
 from shoop_correios.correios import CorreiosServico, CorreiosWS,\
-    CorreiosWSServerTimeoutException, CorreiosWSServerErrorException
+    CorreiosWSServerTimeoutException
 from shoop_correios.packing.correios import CorreiosPackageConstraint
 from shoop.core.fields import MeasurementField
 
 logger = logging.getLogger(__name__)
 
 class CorreiosCarrier(Carrier):
+    CORREIOS_SERVICES_MAP = {
+        'PAC': CorreiosServico.PAC,
+        'SEDEX': CorreiosServico.SEDEX,
+        'SEDEX_10': CorreiosServico.SEDEX_10,
+        'SEDEX_A_COBRAR': CorreiosServico.SEDEX_A_COBRAR,
+        'SEDEX_HOJE': CorreiosServico.SEDEX_HOJE,
+        'ESEDEX': CorreiosServico.ESEDEX
+    }
 
     class Meta:
         verbose_name = _("Correios")
@@ -38,15 +46,10 @@ class CorreiosCarrier(Carrier):
 
     def create_service(self, choice_identifier, **kwargs):
         service = super(CorreiosCarrier, self).create_service(choice_identifier, **kwargs)
+        service_code = CorreiosCarrier.CORREIOS_SERVICES_MAP.get(choice_identifier)
 
-        if choice_identifier == 'PAC':
-            service.behavior_components.add(
-                CorreiosBehaviorComponent.objects.create(cod_servico=CorreiosServico.PAC)
-            )
-        elif choice_identifier == 'SEDEX':
-            service.behavior_components.add(
-                CorreiosBehaviorComponent.objects.create(cod_servico=CorreiosServico.SEDEX)
-            )
+        if service_code:
+            service.behavior_components.add(CorreiosBehaviorComponent.objects.create(cod_servico=service_code))
 
         service.save()
         return service
@@ -55,6 +58,10 @@ class CorreiosCarrier(Carrier):
         return [
             ServiceChoice('PAC', _('PAC')),
             ServiceChoice('SEDEX', _('Sedex')),
+            ServiceChoice('SEDEX_10', _('Sedex 10')),
+            ServiceChoice('SEDEX_A_COBRAR', _('Sedex a cobrar')),
+            ServiceChoice('SEDEX_HOJE', _('Sedex Hoje')),
+            ServiceChoice('ESEDEX', _('eSedex')),
         ]
 
 class CorreiosBehaviorComponent(ServiceBehaviorComponent):

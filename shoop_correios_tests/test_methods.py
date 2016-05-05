@@ -20,7 +20,7 @@ from shoop_tests.utils.basketish_order_source import BasketishOrderSource
 from shoop_correios.models import CorreiosCarrier
 from shoop_tests.core.test_order_creator import seed_source
 from shoop.core.models._service_shipping import ShippingMethod
-from unittest.mock import patch
+from mock import patch
 from shoop_correios.correios import CorreiosWS
 from shoop_correios_tests import create_mock_ws_result
 

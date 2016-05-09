@@ -25,3 +25,5 @@ class ShoopCorreiosAppConfig(AppConfig):
 
 
 default_app_config = __name__ + ".ShoopCorreiosAppConfig"
+
+__version__ = "1.0.0"

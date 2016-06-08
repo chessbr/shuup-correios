@@ -1,7 +1,9 @@
-[![Build Status](https://travis-ci.org/rockho-team/shoop-correios.svg?branch=master)](https://travis-ci.org/rockho-team/shoop-correios)
-
 Shoop-Correios
 ==============
+
+[![Build Status](https://travis-ci.org/rockho-team/shoop-correios.svg?branch=master)](https://travis-ci.org/rockho-team/shoop-correios)
+[![Coverage Status](https://coveralls.io/repos/github/rockho-team/shoop-correios/badge.svg?branch=master)](https://coveralls.io/github/rockho-team/shoop-correios?branch=master)
+
 A Correios shipping method add-on for Shoop.
 
 ## Main features

@@ -4,8 +4,11 @@ python:
   - "3.4"
   - "3.5"
 install:
+  - pip install -U pip
+  - pip install coveralls
 # install shoop's master HEAD - v4.0 compatible
   - pip install -e git+https://github.com/shoopio/shoop.git#egg=shoop[everything]
   - pip install -e .
 script:
-  - py.test -vvv shoop_correios_tests
+  - py.test -ra -vvv --cov-config .coveragerc --cov shoop_correios shoop_correios_tests
+after_success: coveralls

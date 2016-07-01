@@ -6,8 +6,7 @@ python:
 install:
   - pip install -U pip
   - pip install coveralls
-# install shoop's master HEAD - v4.0 compatible
-  - pip install -e git+https://github.com/shoopio/shoop.git#egg=shoop[everything]
+  - pip install -e git+https://github.com/shuup/shuup.git@v4.0.0#egg=shoop[everything]
   - pip install -e .
 script:
   - py.test -ra -vvv --cov-config .coveragerc --cov shoop_correios shoop_correios_tests

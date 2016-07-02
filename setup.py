@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# This file is part of Shoop Correios.
+# This file is part of Shuup Correios.
 #
 # Copyright (c) 2016, Rockho Team. All rights reserved.
 # Author: Christian Hess
@@ -9,16 +9,16 @@
 
 import setuptools
 
-NAME = 'shoop-correios'
+NAME = 'shuup-correios'
 VERSION = '1.0.0'
-DESCRIPTION = 'A Correios shipping method add-on for Shoop'
+DESCRIPTION = 'A Correios shipping method add-on for Shuup'
 AUTHOR = 'Rockho Team'
 AUTHOR_EMAIL = 'rockho@rockho.com.br'
 URL = 'http://www.rockho.com.br/'
 LICENSE = 'AGPL-3.0'  # https://spdx.org/licenses/
 
 EXCLUDED_PACKAGES = [
-    'shoop_correios_tests', 'shoop_correios_tests.*',
+    'shuup_correios_tests', 'shuup_correios_tests.*',
 ]
 
 REQUIRES = [
@@ -35,8 +35,8 @@ if __name__ == '__main__':
         author=AUTHOR,
         author_email=AUTHOR_EMAIL,
         license=LICENSE,
-        packages=["shoop_correios"],
+        packages=["shuup_correios"],
         include_package_data=True,
         install_requires=REQUIRES,
-        entry_points={"shoop.addon": "shoop_correios=shoop_correios"}
+        entry_points={"shuup.addon": "shuup_correios=shuup_correios"}
     )

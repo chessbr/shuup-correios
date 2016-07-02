@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# This file is part of Shoop Correios.
+# This file is part of Shuup Correios.
 #
 # Copyright (c) 2016, Rockho Team. All rights reserved.
 # Author: Christian Hess
@@ -10,19 +10,19 @@
 from decimal import Decimal
 import pytest
 
-from shoop.core.models import (get_person_contact, OrderLineType)
-from shoop.testing.factories import (
+from shuup.core.models import (get_person_contact, OrderLineType)
+from shuup.testing.factories import (
     get_address, get_default_product, get_default_shop,
     get_default_supplier, get_default_tax_class,
     get_payment_method, create_product
 )
-from shoop_tests.utils.basketish_order_source import BasketishOrderSource
-from shoop_correios.models import CorreiosCarrier
-from shoop_tests.core.test_order_creator import seed_source
-from shoop.core.models._service_shipping import ShippingMethod
+from shuup_tests.utils.basketish_order_source import BasketishOrderSource
+from shuup_correios.models import CorreiosCarrier
+from shuup_tests.core.test_order_creator import seed_source
+from shuup.core.models._service_shipping import ShippingMethod
 from mock import patch
-from shoop_correios.correios import CorreiosWS
-from shoop_correios_tests import create_mock_ws_result
+from shuup_correios.correios import CorreiosWS
+from shuup_correios_tests import create_mock_ws_result
 
 MOCKED_SUCCESS_RESULT = create_mock_ws_result()
 

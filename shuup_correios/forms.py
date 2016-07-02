@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# This file is part of Shoop Correios.
+# This file is part of Shuup Correios.
 #
 # Copyright (c) 2016, Rockho Team. All rights reserved.
 # Author: Christian Hess
@@ -9,11 +9,11 @@
 
 from __future__ import unicode_literals
 
-from shoop.admin.forms import ShoopAdminForm
-from shoop_correios.models import CorreiosCarrier, CorreiosBehaviorComponent
+from shuup.admin.forms import ShuupAdminForm
+from shuup_correios.models import CorreiosCarrier, CorreiosBehaviorComponent
 from django import forms
 
-class CorreiosCarrierForm(ShoopAdminForm):
+class CorreiosCarrierForm(ShuupAdminForm):
     class Meta:
         model = CorreiosCarrier
         exclude = ["identifier"]

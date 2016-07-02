@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# This file is part of Shoop Correios.
+# This file is part of Shuup Correios.
 #
 # Copyright (c) 2016, Rockho Team. All rights reserved.
 # Author: Christian Hess
@@ -11,11 +11,11 @@ import pytest
 from decimal import Decimal
 
 from bs4 import BeautifulSoup
-from shoop_correios.correios import _convert_to_int, \
+from shuup_correios.correios import _convert_to_int, \
     _convert_currency_to_decimal, _convert_to_bool, \
     CorreiosWS, CorreiosServico, CorreiosWSServerErrorException,\
     CorreiosWSServerTimeoutException
-from shoop_correios.packing.correios import CorreiosPackage
+from shuup_correios.packing.correios import CorreiosPackage
 
 
 def test_convert_service_element():

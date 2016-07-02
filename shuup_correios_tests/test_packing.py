@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# This file is part of Shoop Correios.
+# This file is part of Shuup Correios.
 #
 # Copyright (c) 2016, Rockho Team. All rights reserved.
 # Author: Christian Hess
@@ -8,13 +8,13 @@
 # LICENSE file in the root directory of this source tree.
 
 
-from shoop_correios.packing import BasePackage
-from shoop_correios.packing.correios import CorreiosPackage,\
+from shuup_correios.packing import BasePackage
+from shuup_correios.packing.correios import CorreiosPackage,\
     _get_product_dimensions, CorreiosPackageConstraint, CorreiosSimplePackager
 
-from shoop.testing.factories import create_product, get_default_supplier
-from shoop_tests.core.test_order_creator import seed_source
-from shoop.core.models._order_lines import OrderLineType
+from shuup.testing.factories import create_product, get_default_supplier
+from shuup_tests.core.test_order_creator import seed_source
+from shuup.core.models._order_lines import OrderLineType
 import pytest
 from decimal import Decimal
 

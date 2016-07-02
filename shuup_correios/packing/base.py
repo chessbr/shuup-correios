@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# This file is part of Shoop Correios.
+# This file is part of Shuup Correios.
 #
 # Copyright (c) 2016, Rockho Team. All rights reserved.
 # Author: Christian Hess
@@ -19,20 +19,20 @@ class AbstractPackager(object):
     def new_package(self):
         """
         Creates and returns a brand-new package
-        :rtype package_constraint: shoop_correios.packing.AbstractPackage
+        :rtype package_constraint: shuup_correios.packing.AbstractPackage
         """
         raise NotImplementedError("Implement this method")
 
     def set_package_constraint(self, package_constraint):
         """
         Sets the current packages constraint. New packages must be created with this constraint.
-        :type package_constraint: shoop_correios.packing.AbstractPackageConstraint
+        :type package_constraint: shuup_correios.packing.AbstractPackageConstraint
         """
         raise NotImplementedError("Implement this method")
 
     def pack_products(self, source):
         """
-        :type source: shoop.core.order_creator.OrderSource
+        :type source: shuup.core.order_creator.OrderSource
         :rtype: Iterable[Package]
         """
         raise NotImplementedError("Implement this method")
@@ -70,7 +70,7 @@ class AbstractPackage(object):
     def product_fits(self, product):
         """
         Indicates whether the product fits in the package
-        :type product: shoop.core.models.Product
+        :type product: shuup.core.models.Product
         :param: product: the product to check whether it fits or not
         :rtype: bool
         :return: whether the product fits in the package
@@ -80,7 +80,7 @@ class AbstractPackage(object):
     def add_product(self, product):
         """
         Adds a product to the package
-        :type product: shoop.core.models.Product
+        :type product: shuup.core.models.Product
         """
         raise NotImplementedError("Implement this method")
 

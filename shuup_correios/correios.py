@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# This file is part of Shoop Correios.
+# This file is part of Shuup Correios.
 #
 # Copyright (c) 2016, Rockho Team. All rights reserved.
 # Author: Christian Hess
@@ -140,10 +140,10 @@ class CorreiosWS(object):
         :type cep_origem: string
         :param cep_destino:
             CEP de origem no formato "12345678"
-        :type cod_servico: shoop_correios.base.CorreiosServico
+        :type cod_servico: shuup_correios.base.CorreiosServico
         :param cod_servico:
             Código do serviço dos Correios a se obter o valor e prazo
-        :type package: shoop_correios.packing.AbstractPackage
+        :type package: shuup_correios.packing.AbstractPackage
         :param package: informações do pacote a ser eviado
         :type cod_empresa: string
         :param cod_empresa:
@@ -161,7 +161,7 @@ class CorreiosWS(object):
         :param aviso_recebimento:
             Indica se deve utilizar o serviço de Aviso de Recebimento
         :return: Resultado do serviço dos correios
-        :rtype: shoop_correios.correios.CorreiosWS.CorreiosWSServiceResult
+        :rtype: shuup_correios.correios.CorreiosWS.CorreiosWSServiceResult
         """
 
         payload = {

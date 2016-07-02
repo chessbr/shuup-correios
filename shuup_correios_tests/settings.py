@@ -13,29 +13,29 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.staticfiles',
-    # shoop themes
-    'shoop.themes.classic_gray',
-    # shoop
-    'shoop.addons',
-    'shoop.admin',
-    'shoop.core',
-    'shoop.default_tax',
-    'shoop.front',
-    'shoop.front.apps.auth',
-    'shoop.front.apps.customer_information',
-    'shoop.front.apps.personal_order_history',
-    'shoop.front.apps.registration',
-    'shoop.front.apps.simple_order_notification',
-    'shoop.front.apps.simple_search',
-    'shoop.notify',
-    'shoop.simple_cms',
-    'shoop.customer_group_pricing',
-    'shoop.campaigns',
-    'shoop.simple_supplier',
-    'shoop.order_printouts',
-    'shoop.testing',
-    'shoop.utils',
-    'shoop.xtheme',
+    # shuup themes
+    'shuup.themes.classic_gray',
+    # shuup
+    'shuup.addons',
+    'shuup.admin',
+    'shuup.core',
+    'shuup.default_tax',
+    'shuup.front',
+    'shuup.front.apps.auth',
+    'shuup.front.apps.customer_information',
+    'shuup.front.apps.personal_order_history',
+    'shuup.front.apps.registration',
+    'shuup.front.apps.simple_order_notification',
+    'shuup.front.apps.simple_search',
+    'shuup.notify',
+    'shuup.simple_cms',
+    'shuup.customer_group_pricing',
+    'shuup.campaigns',
+    'shuup.simple_supplier',
+    'shuup.order_printouts',
+    'shuup.testing',
+    'shuup.utils',
+    'shuup.xtheme',
     # external apps
     'bootstrap3',
     'django_jinja',
@@ -44,7 +44,7 @@ INSTALLED_APPS = (
     'registration',
     'rest_framework',
 
-    "shoop_correios"
+    "shuup_correios"
 )
 
 DATABASES = {
@@ -52,7 +52,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(
             tempfile.gettempdir(),
-            'shoop_correios_tests.sqlite3'
+            'shuup_correios_tests.sqlite3'
         ),
     }
 }

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# This file is part of Shoop Correios.
+# This file is part of Shuup Correios.
 #
 # Copyright (c) 2016, Rockho Team. All rights reserved.
 # Author: Christian Hess
@@ -14,19 +14,19 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 
-from shoop.core.models._service_shipping import Carrier
-from shoop.core.models._service_base import ServiceChoice,\
+from shuup.core.models._service_shipping import Carrier
+from shuup.core.models._service_base import ServiceChoice,\
     ServiceBehaviorComponent, ServiceCost
-from shoop.utils.dates import DurationRange
-from shoop.utils.importing import cached_load
+from shuup.utils.dates import DurationRange
+from shuup.utils.importing import cached_load
 
 from decimal import Decimal
 import logging
 
-from shoop_correios.correios import CorreiosServico, CorreiosWS,\
+from shuup_correios.correios import CorreiosServico, CorreiosWS,\
     CorreiosWSServerTimeoutException
-from shoop_correios.packing.correios import CorreiosPackageConstraint
-from shoop.core.fields import MeasurementField
+from shuup_correios.packing.correios import CorreiosPackageConstraint
+from shuup.core.fields import MeasurementField
 
 logger = logging.getLogger(__name__)
 
@@ -198,7 +198,7 @@ class CorreiosBehaviorComponent(ServiceBehaviorComponent):
     def get_unavailability_reasons(self, service, source):
         """
         :type service: Service
-        :type source: shoop.core.order_creator.OrderSource
+        :type source: shuup.core.order_creator.OrderSource
         :rtype: Iterable[ValidationError]
         """
         errors = []
@@ -228,7 +228,7 @@ class CorreiosBehaviorComponent(ServiceBehaviorComponent):
         ``ShippingMethod`` and ``PaymentMethod`` objects.
 
         :type service: Service
-        :type source: shoop.core.order_creator.OrderSource
+        :type source: shuup.core.order_creator.OrderSource
         :rtype: Iterable[ServiceCost]
         """
         packages = self._pack_source(source)
@@ -257,8 +257,8 @@ class CorreiosBehaviorComponent(ServiceBehaviorComponent):
     def get_delivery_time(self, service, source):
         """
         :type service: Service
-        :type source: shoop.core.order_creator.OrderSource
-        :rtype: shoop.utils.dates.DurationRange|None
+        :type source: shuup.core.order_creator.OrderSource
+        :rtype: shuup.utils.dates.DurationRange|None
         """
 
         packages = self._pack_source(source)
@@ -289,7 +289,7 @@ class CorreiosBehaviorComponent(ServiceBehaviorComponent):
     def _pack_source(self, source):
         """
         Empacota itens do pedido
-        :rtype: Iterable[shoop_correios.packing.CorreiosPackage|None]
+        :rtype: Iterable[shuup_correios.packing.CorreiosPackage|None]
         :return: Lista de pacotes ou None se for impossível empacotar pedido
         """
         correios_package_constraint = CorreiosPackageConstraint(self.max_width,
@@ -311,8 +311,8 @@ class CorreiosBehaviorComponent(ServiceBehaviorComponent):
     def _get_correios_results(self, source, packages):
         """
         Obtém uma lista dos resultados obtidos dos correios para determinado pedido
-        :type source: shoop.core.order_creator.OrderSource
-        :rtype: list of shoop_correios.correios.CorreiosWS.CorreiosWSServiceResult
+        :type source: shuup.core.order_creator.OrderSource
+        :rtype: list of shuup_correios.correios.CorreiosWS.CorreiosWSServiceResult
         """
         results = []
 

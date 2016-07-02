@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# This file is part of Shoop Correios.
+# This file is part of Shuup Correios.
 #
 # Copyright (c) 2016, Rockho Team. All rights reserved.
 # Author: Christian Hess
@@ -8,8 +8,8 @@
 # LICENSE file in the root directory of this source tree.
 
 from __future__ import unicode_literals
-from shoop.core.models._order_lines import OrderLineType
-from shoop_correios.packing.base import AbstractPackageConstraint, BasePackage,\
+from shuup.core.models._order_lines import OrderLineType
+from shuup_correios.packing.base import AbstractPackageConstraint, BasePackage,\
     AbstractPackager
 from decimal import Decimal
 from django.utils.log import getLogger
@@ -207,8 +207,8 @@ class CorreiosSimplePackager(AbstractPackager):
         o pacote é fechado e outro é criado.
 
         :param: source: cesta de itens a ser utilizada para empacotar os itens
-        :type source: shoop.core.order_creator.OrderSource
-        :rtype: Iterable[shoop_correios.packing.CorreiosPackage|None]
+        :type source: shuup.core.order_creator.OrderSource
+        :rtype: Iterable[shuup_correios.packing.CorreiosPackage|None]
         :return: Lista de pacotes ou None se for impossível
         """
 
@@ -256,7 +256,7 @@ class CorreiosSimplePackager(AbstractPackager):
 
 def _get_product_dimensions(product):
     """
-    :type: product: shoop.core.models.Product
+    :type: product: shuup.core.models.Product
     """
 
     height = product.height

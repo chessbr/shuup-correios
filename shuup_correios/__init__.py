@@ -26,4 +26,4 @@ class ShuupCorreiosAppConfig(AppConfig):
 
 default_app_config = __name__ + ".ShuupCorreiosAppConfig"
 
-__version__ = "1.0.0"
+__version__ = "1.0.0.post0"

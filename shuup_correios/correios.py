@@ -7,18 +7,24 @@
 # This source code is licensed under the AGPLv3 license found in the
 # LICENSE file in the root directory of this source tree.
 
-import requests
-
+import hashlib
+import logging
 from decimal import Decimal
-from django.utils.log import getLogger
+
+import requests
+import xmltodict
 from django.conf import settings
-from bs4 import BeautifulSoup
+from django.core.cache import caches
+from django.utils.encoding import force_bytes, force_text
 from requests.exceptions import Timeout
 
-logger = getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 # URL de acesso ao cálculo de preço e prazo
 CORREIOS_WS_PRECO_PRAZO_URL = "http://ws.correios.com.br/calculador/CalcPrecoPrazo.aspx"
+
+# cache
+correios_cache = caches[settings.CORREIOS_CACHE_NAME]
 
 
 class CorreiosServico(object):
@@ -42,6 +48,7 @@ class CorreiosFormatoEncomenda(object):
 class CorreiosWSServerTimeoutException(Timeout):
     """ Classe para exceções de Timeout de conexão com os Correios """
     pass
+
 
 class CorreiosWSServerErrorException(Exception):
     """ Classe para exceções de status diferentes de HTTP 200 recebidos do servidor dos Correios """
@@ -95,7 +102,7 @@ class CorreiosWS(object):
                                                                      self.obs_fim)
 
         @classmethod
-        def from_service_element(cls, servico):
+        def from_service(cls, servico):
             """
             Popula os atributos através dos atributos do elemento XML
             :type servico BeautifulSoup.Tag
@@ -103,21 +110,21 @@ class CorreiosWS(object):
             """
             result = cls()
 
-            result.codigo = servico.codigo.get_text() if servico.codigo else ''
-            result.valor = _convert_currency_to_decimal(servico.valor.get_text()) if servico.valor else Decimal()
-            result.prazo_entrega = _convert_to_int(servico.prazoentrega.get_text()) if servico.prazoentrega else 0
+            result.codigo = servico["Codigo"]
+            result.valor = _convert_currency_to_decimal(servico.get('Valor'))
+            result.prazo_entrega = _convert_to_int(servico.get('PrazoEntrega'))
 
-            result.valor_mao_propria = _convert_currency_to_decimal(servico.valormaopropria.get_text()) if servico.valormaopropria else Decimal()
-            result.valor_aviso_recebimento = _convert_currency_to_decimal(servico.valoravisorecebimento.get_text()) if servico.valoravisorecebimento else Decimal()
-            result.valor_declarado = _convert_currency_to_decimal(servico.valordeclarado.get_text()) if servico.valordeclarado else Decimal()
-            result.entrega_domiciliar = _convert_to_bool(servico.entregadomiciliar.get_text()) if servico.entregadomiciliar else False
-            result.entrega_sabado = _convert_to_bool(servico.entregasabado.get_text()) if servico.entregasabado else False
+            result.valor_mao_propria = _convert_currency_to_decimal(servico.get('ValorMaoPropria'))
+            result.valor_aviso_recebimento = _convert_currency_to_decimal(servico.get('ValorAvisoRecebimento'))
+            result.valor_declarado = _convert_currency_to_decimal(servico.get('ValorValorDeclarado'))
+            result.entrega_domiciliar = _convert_to_bool(servico.get('EntregaDomiciliar'))
+            result.entrega_sabado = _convert_to_bool(servico.get('EntregaSabado'))
 
-            result.erro = _convert_to_int(servico.erro.get_text()) if servico.erro else 0
-            result.msg_erro = servico.msgerro.get_text() if servico.msgerro else ''
+            result.erro = _convert_to_int(servico.get('Erro', 0))
+            result.msg_erro = servico.get('MsgErro', '') or ''
 
-            result.valor_sem_adicionais = _convert_currency_to_decimal(servico.valorsemadicionais.get_text()) if servico.valorsemadicionais else Decimal()
-            result.obs_fim = servico.obsfim.get_text() if servico.obsfim else ''
+            result.valor_sem_adicionais = _convert_currency_to_decimal(servico.get('ValorSemAdicionais', ''))
+            result.obs_fim = servico.get('obsFim', '') or ''
             return result
 
     @classmethod
@@ -130,7 +137,10 @@ class CorreiosWS(object):
                         senha=None,
                         mao_propria=False,
                         valor_declarado=0.0,
-                        aviso_recebimento=False):
+                        aviso_recebimento=False,
+                        min_package_width=Decimal(),
+                        min_package_length=Decimal(),
+                        min_package_height=Decimal()):
         """
         Calcula o preço e prazo da encomenda através do webservice dos Correios.
 
@@ -162,7 +172,30 @@ class CorreiosWS(object):
             Indica se deve utilizar o serviço de Aviso de Recebimento
         :return: Resultado do serviço dos correios
         :rtype: shuup_correios.correios.CorreiosWS.CorreiosWSServiceResult
+
+        :param: min_package_width Largura mínima do pacote (mm)
+        :param: min_package_length Comprimento mínimo do pacote (mm)
+        :param: min_package_height Altura mínima do pacote (mm)
         """
+
+        package_width = max(package.width, min_package_width)
+        package_length = max(package.length, min_package_length)
+        package_height = max(package.height, min_package_height)
+
+        # VERIFICA SE A REQUISIÇÃO ESTÁ NO CACHE
+
+        # cria uma tupla de parâmetros para criar um chave única para
+        # identificar o pacote no cache
+        params = (cep_destino, cep_origem, cod_servico, cod_empresa, senha,
+                  mao_propria, valor_declarado, aviso_recebimento,
+                  package.weight, package_width, package_length, package_height)
+        # gera a chave do cache
+        cache_key = force_text(hashlib.md5(force_bytes(params)).hexdigest())
+
+        cached_result = correios_cache.get(cache_key)
+        if cached_result:
+            logger.debug("Correios: Using cached value")
+            return cached_result
 
         payload = {
             "nCdEmpresa": cod_empresa or '',
@@ -170,17 +203,19 @@ class CorreiosWS(object):
             "nCdServico": cod_servico,
             "sCepOrigem": cep_origem or '',
             "sCepDestino": cep_destino or '',
-            "nVlPeso": package.weight / Decimal(1000.0),
+            "nVlPeso": package.weight * Decimal(0.001),
             "nCdFormato": CorreiosFormatoEncomenda.CAIXA_PACOTE,
-            "nVlComprimento": package.length / Decimal(10.0),
-            "nVlAltura": package.height / Decimal(10.0),
-            "nVlLargura": package.width / Decimal(10.0),
+            "nVlComprimento": package_length * Decimal(0.1),
+            "nVlAltura": package_height * Decimal(0.1),
+            "nVlLargura": package_width * Decimal(0.1),
             "nVlDiametro": 0,
             "sCdMaoPropria": 'S' if mao_propria else 'N',
             "nVlValorDeclarado": valor_declarado or 0.0,
             "sCdAvisoRecebimento": 'S' if aviso_recebimento else 'N',
             "strRetorno": 'xml'
         }
+
+        logger.debug("Correios: Making request")
 
         try:
             response = requests.post(CORREIOS_WS_PRECO_PRAZO_URL,
@@ -189,15 +224,23 @@ class CorreiosWS(object):
 
             if response.status_code == 200:
                 # deixa a coisa mais 'fácil' para se obter os valores
-                bs = BeautifulSoup(response.text)
+                result = xmltodict.parse(response.text)
 
-                if bs.Servicos:
+                is_list = isinstance(result["Servicos"]["cServico"], list)
+
+                if is_list:
                     # obtém o primeiro serviço - só requisitamos um mesmo...
-                    servico = bs.servicos.find_all('cservico')[0]
+                    servico = result["Servicos"]["cServico"][0]
                 else:
-                    servico = bs.cservico
+                    servico = result["Servicos"]["cServico"]
 
-                return CorreiosWS.CorreiosWSServiceResult.from_service_element(servico)
+                result = CorreiosWS.CorreiosWSServiceResult.from_service(servico)
+
+                if result.erro == 0:
+                    # sem erros, salva no cache
+                    correios_cache.set(cache_key, result)
+
+                return result
 
             else:
                 logger.error("Erro do servidor de WS dos Correios.")
@@ -207,7 +250,7 @@ class CorreiosWS(object):
             logger.exception("Timeout de conexão com o WS dos Correios.")
             raise CorreiosWSServerTimeoutException()
 
-## Utils
+
 def _convert_to_int(value):
     """
     Converte um valor em int
@@ -216,6 +259,7 @@ def _convert_to_int(value):
         return int(value)
     except:
         return 0
+
 
 def _convert_currency_to_decimal(currency):
     """
@@ -227,6 +271,7 @@ def _convert_currency_to_decimal(currency):
         return Decimal(currency.replace('.', '').replace(',', '.') or 0.0)
     except:
         return Decimal()
+
 
 def _convert_to_bool(value):
     """ Converte valores `S` e `N` para True e False, respectivamente """

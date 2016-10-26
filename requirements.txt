@@ -1,0 +1,1 @@
+-e git+https://github.com/rockho-team/shuup-order-packager.git@master#egg=shuup-order-packager

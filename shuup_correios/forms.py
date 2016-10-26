@@ -13,12 +13,18 @@ from shuup.admin.forms import ShuupAdminForm
 from shuup_correios.models import CorreiosCarrier, CorreiosBehaviorComponent
 from django import forms
 
+
 class CorreiosCarrierForm(ShuupAdminForm):
     class Meta:
         model = CorreiosCarrier
         exclude = ["identifier"]
 
+
 class CorreiosBehaviorComponentForm(forms.ModelForm):
     class Meta:
         model = CorreiosBehaviorComponent
         exclude = ["identifier"]
+
+    def __init__(self, *args, **kwargs):
+        super(CorreiosBehaviorComponentForm, self).__init__(*args, **kwargs)
+        self.fields['cod_servico'].widget.attrs['readonly'] = 'readonly'

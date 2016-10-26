@@ -8,23 +8,23 @@
 # LICENSE file in the root directory of this source tree.
 
 from decimal import Decimal
-import pytest
 
-from shuup.core.models import (get_person_contact, OrderLineType)
-from shuup.testing.factories import (
-    get_address, get_default_product, get_default_shop,
-    get_default_supplier, get_default_tax_class,
-    get_payment_method, create_product
-)
-from shuup_tests.utils.basketish_order_source import BasketishOrderSource
-from shuup_correios.models import CorreiosCarrier
-from shuup_tests.core.test_order_creator import seed_source
-from shuup.core.models._service_shipping import ShippingMethod
+import pytest
 from mock import patch
+from shuup.core.models import OrderLineType, get_person_contact
+from shuup.core.models._service_shipping import ShippingMethod
+from shuup.testing.factories import (create_product, get_address,
+                                     get_default_product, get_default_shop,
+                                     get_default_supplier,
+                                     get_default_tax_class, get_payment_method)
 from shuup_correios.correios import CorreiosWS
+from shuup_correios.models import CorreiosCarrier
 from shuup_correios_tests import create_mock_ws_result
+from shuup_tests.core.test_order_creator import seed_source
+from shuup_tests.utils.basketish_order_source import BasketishOrderSource
 
 MOCKED_SUCCESS_RESULT = create_mock_ws_result()
+
 
 @pytest.mark.django_db
 def test_create_services():
@@ -35,28 +35,24 @@ def test_create_services():
         shop=get_default_shop(),
         enabled=True,
         tax_class=get_default_tax_class(),
-        name="Correios PAC"
-    )
+        name="Correios PAC")
     assert pac_service.behavior_components.count() == 1
-
 
     sedex_service = carrier.create_service(
         'SEDEX',
         shop=get_default_shop(),
         enabled=True,
         tax_class=get_default_tax_class(),
-        name="Correios SEDEX"
-    )
+        name="Correios SEDEX")
     assert sedex_service.behavior_components.count() == 1
-
 
     strange_service = carrier.create_service(
         'STRANGE',
         shop=get_default_shop(),
         enabled=True,
         tax_class=get_default_tax_class(),
-        name="unknown"
-    )
+        name="unknown")
+
     assert strange_service.behavior_components.count() == 0
 
 
@@ -69,8 +65,7 @@ def get_correios_carrier_1():
         shop=get_default_shop(),
         enabled=True,
         tax_class=get_default_tax_class(),
-        name="Correios - PAC #1",
-    )
+        name="Correios - PAC #1",)
     pac_service_bc1 = pac_service1.behavior_components.first()
     pac_service_bc1.cep_origem = '82015780'
     pac_service_bc1.max_weight = Decimal(30000.0)
@@ -85,6 +80,7 @@ def get_correios_carrier_1():
 
     return carrier
 
+
 @pytest.mark.django_db
 def get_correios_carrier_2():
     carrier = CorreiosCarrier.objects.create(name="Correios C2")
@@ -94,8 +90,8 @@ def get_correios_carrier_2():
         shop=get_default_shop(),
         enabled=True,
         tax_class=get_default_tax_class(),
-        name="Correios - PAC #2",
-    )
+        name="Correios - PAC #2")
+
     pac_service_bc2 = pac_service2.behavior_components.first()
     pac_service_bc2.cep_origem = '88220000'
     pac_service_bc2.max_weight = Decimal(40000.0)
@@ -114,6 +110,7 @@ def get_correios_carrier_2():
     pac_service_bc2.save()
 
     return carrier
+
 
 @pytest.mark.django_db
 def test_methods_possible(admin_user):
@@ -134,11 +131,9 @@ def test_methods_possible(admin_user):
             supplier=get_default_supplier(),
             quantity=1,
             base_unit_price=source.create_price(10),
-            weight=Decimal("0.2")
-        )
+            weight=Decimal("0.2"))
         billing_address = get_address()
         shipping_address = get_address(name="My House", country='BR')
-
         shipping_address.postal_code = "89070210"
 
         source.billing_address = billing_address
@@ -162,6 +157,56 @@ def test_methods_possible(admin_user):
             if line.type == OrderLineType.SHIPPING:
                 assert line.text == "Correios - PAC #1"
 
+
+@pytest.mark.django_db
+def test_methods_possible_no_shipping_address(admin_user):
+    with patch.object(CorreiosWS, 'get_preco_prazo', return_value=MOCKED_SUCCESS_RESULT):
+
+        contact = get_person_contact(admin_user)
+        source = BasketishOrderSource(get_default_shop())
+
+        default_product = get_default_product()
+        default_product.width = 500
+        default_product.depth = 400
+        default_product.heith = 130
+        default_product.save()
+
+        source.add_line(
+            type=OrderLineType.PRODUCT,
+            product=default_product,
+            supplier=get_default_supplier(),
+            quantity=1,
+            base_unit_price=source.create_price(10),
+            weight=Decimal("0.2"))
+        billing_address = get_address(name="My House", country='BR')
+        billing_address.postal_code = "89070210"
+
+        source.billing_address = billing_address
+        source.shipping_address = None
+        source.customer = contact
+
+        source.shipping_method = get_correios_carrier_1()
+        source.payment_method = get_payment_method(name="neat", price=4)
+        assert source.shipping_method_id
+        assert source.payment_method_id
+
+        errors = list(source.get_validation_errors())
+        # no errors
+        assert len(errors) == 0
+
+        final_lines = list(source.get_final_lines())
+
+        assert any(line.type == OrderLineType.SHIPPING for line in final_lines)
+
+        for line in final_lines:
+            if line.type == OrderLineType.SHIPPING:
+                assert line.text == "Correios - PAC #1"
+
+        # no billing addres also - no shipping
+        source.billing_address = None
+        list(source.get_final_lines())
+
+
 @pytest.mark.django_db
 def test_methods_impossible(admin_user):
     contact = get_person_contact(admin_user)
@@ -179,8 +224,7 @@ def test_methods_impossible(admin_user):
         supplier=get_default_supplier(),
         quantity=1,
         base_unit_price=source.create_price(10),
-        weight=Decimal("200")
-    )
+        weight=Decimal("200"))
     billing_address = get_address()
     shipping_address = get_address(name="My House", country='BR')
 
@@ -197,7 +241,6 @@ def test_methods_impossible(admin_user):
 
     errors = list(source.get_validation_errors())
     assert len(errors) == 1
-
 
 
 @pytest.mark.django_db
@@ -218,15 +261,13 @@ def test_correios_pack_source(rf, admin_user):
             product=p1,
             supplier=get_default_supplier(),
             quantity=2,
-            base_unit_price=source.create_price(10),
-        )
+            base_unit_price=source.create_price(10))
         billing_address = get_address()
         shipping_address = get_address(name="My House", country='BR')
         shipping_address.postal_code = "89070210"
         source.billing_address = billing_address
         source.shipping_address = shipping_address
         source.customer = contact
-
 
         bc = ShippingMethod.objects.filter(carrier=pac_carrier).first().behavior_components.first()
         packages = bc._pack_source(source)
@@ -239,7 +280,7 @@ def test_correios_pack_source(rf, admin_user):
         assert all(result.valor > Decimal(0) for result in results)
 
         delivery_time = bc.get_delivery_time(ShippingMethod.objects.filter(carrier=pac_carrier).first(), source)
-        assert not delivery_time is None
+        assert delivery_time is not None
 
         # como os locais de entrega sao iguais, prazo iguais
         assert delivery_time.max_duration == delivery_time.min_duration
@@ -265,8 +306,7 @@ def test_correios_delivery_time_1(rf, admin_user):
             product=p1,
             supplier=get_default_supplier(),
             quantity=1,
-            base_unit_price=source.create_price(10),
-        )
+            base_unit_price=source.create_price(10))
         billing_address = get_address()
         shipping_address = get_address(name="My House", country='BR')
         shipping_address.postal_code = "89070210"
@@ -284,7 +324,7 @@ def test_correios_delivery_time_1(rf, admin_user):
         assert results[0].valor > Decimal(0)
 
         delivery_time = bc.get_delivery_time(ShippingMethod.objects.filter(carrier=pac_carrier).first(), source)
-        assert not delivery_time is None
+        assert delivery_time is not None
         assert delivery_time.max_duration == delivery_time.min_duration
         assert delivery_time.max_duration.days == results[0].prazo_entrega + bc.additional_delivery_time
 
@@ -320,16 +360,14 @@ def test_correios_delivery_time_2(rf, admin_user):
             product=p1,
             supplier=get_default_supplier(),
             quantity=2,
-            base_unit_price=source.create_price(10),
-        )
+            base_unit_price=source.create_price(10))
 
         source.add_line(
             type=OrderLineType.PRODUCT,
             product=p2,
             supplier=get_default_supplier(),
             quantity=1,
-            base_unit_price=source.create_price(20),
-        )
+            base_unit_price=source.create_price(20))
 
         billing_address = get_address()
         shipping_address = get_address(name="My House", country='BR')
@@ -346,4 +384,3 @@ def test_correios_delivery_time_2(rf, admin_user):
 
         results = bc._get_correios_results(source, packages)
         assert len(results) == 3
-

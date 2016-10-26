@@ -1,2 +1,4 @@
 .cache/
 shuup_correios_tests/var/
+.coverage
+htmlcov

@@ -47,6 +47,18 @@ INSTALLED_APPS = (
     "shuup_correios"
 )
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'my-default',
+    },
+    'correios': {
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+CORREIOS_CACHE_NAME = 'correios'
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -56,6 +68,8 @@ DATABASES = {
         ),
     }
 }
+
+SESSION_SERIALIZER = "django.contrib.sessions.serializers.PickleSerializer"
 
 
 class DisableMigrations(object):
@@ -80,3 +94,18 @@ TEMPLATES = [
         "NAME": "jinja2",
     },
 ]
+
+LANGUAGES = [
+    ('en', 'English'),
+    ('fi', 'Finnish'),
+    ('ja', 'Japanese'),
+    ('zh-hans', 'Simplified Chinese'),
+    ('pt-br', 'Portuguese (Brazil)'),
+]
+PARLER_DEFAULT_LANGUAGE_CODE = 'en-us'
+PARLER_LANGUAGES = {
+    None: [{"code": c, "name": n} for (c, n) in LANGUAGES],
+    'default': {
+        'hide_untranslated': False,
+    }
+}

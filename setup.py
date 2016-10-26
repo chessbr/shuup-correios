@@ -22,8 +22,7 @@ EXCLUDED_PACKAGES = [
 ]
 
 REQUIRES = [
-    "lxml<=3.6",
-    "beautifulsoup4<=4.4"
+    "xmltodict"
 ]
 
 if __name__ == '__main__':

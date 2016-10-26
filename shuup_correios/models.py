@@ -9,26 +9,28 @@
 
 from __future__ import unicode_literals
 
-from django.utils.translation import ugettext_lazy as _
-from django.db import models
-from django.core.validators import MinValueValidator
-from django.core.exceptions import ValidationError
+import logging
+from decimal import Decimal
 
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
+from django.db import models
+from django.utils.translation import ugettext_lazy as _
+
+from shuup.core.fields import MeasurementField
+from shuup.core.models._service_base import (ServiceBehaviorComponent,
+                                             ServiceChoice, ServiceCost)
 from shuup.core.models._service_shipping import Carrier
-from shuup.core.models._service_base import ServiceChoice,\
-    ServiceBehaviorComponent, ServiceCost
 from shuup.utils.dates import DurationRange
 from shuup.utils.importing import cached_load
-
-from decimal import Decimal
-import logging
-
-from shuup_correios.correios import CorreiosServico, CorreiosWS,\
-    CorreiosWSServerTimeoutException
-from shuup_correios.packing.correios import CorreiosPackageConstraint
-from shuup.core.fields import MeasurementField
+from shuup_correios.correios import (CorreiosServico, CorreiosWS,
+                                     CorreiosWSServerTimeoutException)
+from shuup_order_packager.constraints import (SimplePackageDimensionConstraint,
+                                              WeightPackageConstraint)
 
 logger = logging.getLogger(__name__)
+KG_TO_G = Decimal(1000)
+
 
 class CorreiosCarrier(Carrier):
     CORREIOS_SERVICES_MAP = {
@@ -63,6 +65,7 @@ class CorreiosCarrier(Carrier):
             ServiceChoice('SEDEX_HOJE', _('Sedex Hoje')),
             ServiceChoice('ESEDEX', _('eSedex')),
         ]
+
 
 class CorreiosBehaviorComponent(ServiceBehaviorComponent):
     CORREIOS_SERVICOS_CHOICES = (
@@ -121,14 +124,13 @@ class CorreiosBehaviorComponent(ServiceBehaviorComponent):
                                             help_text="Indica se a encomenda será entregue "
                                                       "com o serviço adicional aviso de recebimento.")
 
-    additional_delivery_time = models.PositiveIntegerField(
-        "Prazo adicional",
-        blank=True,
-        default=0,
-        validators=[MinValueValidator(0)],
-        help_text="Indica quantos dias devem ser somados "
-                   "ao prazo original retornado pelo serviço dos Correios. "
-                   "O prazo será somado no prazo de cada encomenda diferente.")
+    additional_delivery_time = models.PositiveIntegerField("Prazo adicional",
+                                                           blank=True,
+                                                           default=0,
+                                                           validators=[MinValueValidator(0)],
+                                                           help_text="Indica quantos dias devem ser somados "
+                                                                     "ao prazo original retornado pelo serviço dos Correios. "
+                                                                     "O prazo será somado no prazo de cada encomenda diferente.")
 
     additional_price = models.DecimalField("Preço adicional",
                                            blank=True,
@@ -138,30 +140,30 @@ class CorreiosBehaviorComponent(ServiceBehaviorComponent):
                                                      "ao preço original retornado pelo serviço dos Correios. "
                                                      "O preço será somado no valor de cada encomenda diferente.")
 
-    max_weight = MeasurementField(verbose_name="Peso máximo",
-                                  unit="g",
+    max_weight = MeasurementField(verbose_name="Peso máximo da embalagem (kg)",
+                                  unit="kg",
                                   blank=True,
                                   validators=[MinValueValidator(Decimal(0))],
                                   default=Decimal(),
                                   help_text="Indica o peso máximo admitido para esta modalidade.")
 
-    min_length = MeasurementField(verbose_name="Comprimento mínimo",
+    min_length = MeasurementField(verbose_name="Comprimento mínimo (mm)",
                                   unit="mm",
-                                  default=160,
+                                  default=110,
                                   validators=[MinValueValidator(Decimal(0))],
                                   help_text="Indica o comprimento mínimo "
                                             "para caixas e pacotes.")
 
-    max_length = MeasurementField(verbose_name="Comprimento máximo",
+    max_length = MeasurementField(verbose_name="Comprimento máximo (mm)",
                                   unit="mm",
                                   default=1050,
                                   validators=[MinValueValidator(Decimal(0))],
                                   help_text="Indica o comprimento máximo "
                                             "para caixas e pacotes.")
 
-    min_width = MeasurementField(verbose_name="Largura mínima",
+    min_width = MeasurementField(verbose_name="Largura mínima (mm)",
                                  unit="mm",
-                                 default=110,
+                                 default=160,
                                  validators=[MinValueValidator(Decimal(0))],
                                  help_text="Indica a largura mínima "
                                            "para caixas e pacotes.")
@@ -173,21 +175,21 @@ class CorreiosBehaviorComponent(ServiceBehaviorComponent):
                                  help_text="Indica a largura máxima "
                                            "para caixas e pacotes.")
 
-    min_height = MeasurementField(verbose_name="Altura mínima",
+    min_height = MeasurementField(verbose_name="Altura mínima (mm)",
                                   unit="mm",
-                                  default=200,
+                                  default=20,
                                   validators=[MinValueValidator(Decimal(0))],
                                   help_text="Indica a altura mínima "
                                             "para caixas e pacotes.")
 
-    max_height = MeasurementField(verbose_name="Altura máxima",
+    max_height = MeasurementField(verbose_name="Altura máxima (mm)",
                                   unit="mm",
                                   default=1050,
                                   validators=[MinValueValidator(Decimal(0))],
                                   help_text="Indica a altura máxima "
                                             "para caixas e pacotes.")
 
-    max_edges_sum = MeasurementField(verbose_name="Soma máxima das dimensões (L + A + C)",
+    max_edges_sum = MeasurementField(verbose_name="Soma máxima das dimensões (L + A + C) (mm)",
                                      unit="mm",
                                      default=2000,
                                      validators=[MinValueValidator(Decimal(0))],
@@ -201,20 +203,22 @@ class CorreiosBehaviorComponent(ServiceBehaviorComponent):
         :type source: shuup.core.order_creator.OrderSource
         :rtype: Iterable[ValidationError]
         """
+
         errors = []
         packages = self._pack_source(source)
 
         if packages:
             try:
                 results = self._get_correios_results(source, packages)
-    
+
                 if results:
                     for result in results:
                         if result.erro != 0:
+                            logger.warn("{0}: {1}".format(result.erro, result.msg_erro))
                             errors.append(ValidationError("Alguns itens não poderão ser "
                                                           "entregues pelos Correios.", code=result.erro))
             except CorreiosWSServerTimeoutException:
-                errors.append(ValidationError("Não foi possível contatar os serviços dos Correios."))    
+                errors.append(ValidationError("Não foi possível contatar os serviços dos Correios."))
 
         else:
             errors.append(ValidationError("Alguns itens não puderam ser empacotados nos requisitos dos Correios."))
@@ -236,18 +240,18 @@ class CorreiosBehaviorComponent(ServiceBehaviorComponent):
         try:
             results = self._get_correios_results(source, packages)
             total_price = Decimal()
-    
+
             for result in results:
                 if result.erro == 0:
                     total_price = total_price + result.valor
                 else:
                     total_price = 0
-                    logger.critical("CorreiosWS: Erro {0} ao calcular "\
+                    logger.critical("CorreiosWS: Erro {0} ao calcular "
                                     "preço e prazo para {2}: {1}".format(result.erro,
                                                                          result.msg_erro,
                                                                          source))
                     break
-    
+
             if total_price > 0:
                 yield ServiceCost(source.create_price(total_price + self.additional_price))
 
@@ -277,7 +281,7 @@ class CorreiosBehaviorComponent(ServiceBehaviorComponent):
                 min_days = result.prazo_entrega if not min_days else min(min_days, result.prazo_entrega)
 
             else:
-                logger.critical("CorreiosWS: Erro {0} ao calcular "\
+                logger.critical("CorreiosWS: Erro {0} ao calcular "
                                 "preço e prazo para {2}: {1}".format(result.erro,
                                                                      result.msg_erro,
                                                                      source))
@@ -289,24 +293,17 @@ class CorreiosBehaviorComponent(ServiceBehaviorComponent):
     def _pack_source(self, source):
         """
         Empacota itens do pedido
-        :rtype: Iterable[shuup_correios.packing.CorreiosPackage|None]
+        :rtype: Iterable[shuup_order_packager.package.AbstractPackage|None]
         :return: Lista de pacotes ou None se for impossível empacotar pedido
         """
-        correios_package_constraint = CorreiosPackageConstraint(self.max_width,
-                                                                self.max_length,
-                                                                self.max_height,
-                                                                self.max_weight,
-                                                                self.max_edges_sum,
-                                                                self.min_width,
-                                                                self.min_length,
-                                                                self.min_height)
-        # cria e configura o PackagePacker
         packager = cached_load("CORREIOS_PRODUCTS_PACKAGER_CLASS")()
-        packager.set_package_constraint(correios_package_constraint)
+        packager.add_constraint(SimplePackageDimensionConstraint(self.max_width,
+                                                                 self.max_length,
+                                                                 self.max_height,
+                                                                 self.max_edges_sum))
 
-        # cria os pacotes de acordo com o tamanho dos produtos
-        return packager.pack_products(source)
-
+        packager.add_constraint(WeightPackageConstraint(self.max_weight * KG_TO_G))
+        return packager.pack_source(source)
 
     def _get_correios_results(self, source, packages):
         """
@@ -337,6 +334,9 @@ class CorreiosBehaviorComponent(ServiceBehaviorComponent):
                                                       self.senha,
                                                       self.mao_propria,
                                                       pedido_total if self.valor_declarado else 0.0,
-                                                      self.aviso_recebimento))
+                                                      self.aviso_recebimento,
+                                                      self.min_width,
+                                                      self.min_length,
+                                                      self.min_height))
 
         return results

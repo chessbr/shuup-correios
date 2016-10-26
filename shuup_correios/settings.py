@@ -12,7 +12,12 @@ from __future__ import unicode_literals
 #
 # Classe utilizada para empacotar os pedidos
 #
-CORREIOS_PRODUCTS_PACKAGER_CLASS = ("shuup_correios.packing.correios:CorreiosSimplePackager")
+CORREIOS_PRODUCTS_PACKAGER_CLASS = ("shuup_order_packager.algorithms.simple:SimplePackager")
+
+#
+# Nome do cache a ser utilizado para armazenar os resultados do webservice do Correio
+#
+CORREIOS_CACHE_NAME = 'default'
 
 #
 # Quantidade de tempo, em segundos, para estourar timetout na requisição com o webservice
